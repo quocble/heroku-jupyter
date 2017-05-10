@@ -3,7 +3,6 @@ dependencies:
   - python=2.7
   - numpy=1.11.1
   - scipy=0.18.1
-  - sklearn
   - theano=0.9.0
   - pymc3=3.0
   - matplotlib=2.0.0
