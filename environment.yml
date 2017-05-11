@@ -1,6 +1,12 @@
 name: heroku-jupyter
 dependencies:
-#  - python=2.7
+  - gcc
+  - pip:
+    - pgcontents
+    - git+git://github.com/ipython-contrib/jupyter_contrib_nbextensions.git
+    - pymc3
+    - git+https://github.com/quantopian/alphalens
+    # - scikit-cuda
   # bind notebook version (compatibility to pgcontents)
   - notebook = 4
   - ipywidgets
@@ -16,12 +22,9 @@ dependencies:
   - six
   - sqlalchemy
   - nose
-  - pip:
-    - pgcontents
-    - git+git://github.com/ipython-contrib/jupyter_contrib_nbextensions.git
-    - pymc3
   - numpy
   - scipy
   - theano
   - matplotlib
   - pandas
+  # - pygpu

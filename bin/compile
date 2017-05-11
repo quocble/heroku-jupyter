@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# Cloud Foundry IPython Notebook Buildpack
+# Copyright (c) 2014-2015 the original author or authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+set -eo pipefail
+
+echo "-----> Starting compile step..."
+mkdir -p "$1" "$2"
+build=$(cd "$1/" && pwd)
+cache=$(cd "$2/" && pwd)
+
+conda_temp="$HOME/.conda"
+# fix cloudfoundry path issues
+if [ "$HOME" == "/home/vcap" ]; then conda_temp="$HOME/app/.conda"; fi
+
+if [ ! -e "$build/conda_runtime.txt" ]; then
+	conda_runtime="Miniconda3-latest-Linux-x86_64.sh"
+else
+	conda_runtime=$(cat "$build/conda_runtime.txt")
+fi
+miniconda_installer="$cache/$conda_runtime"
+
+echo "-----> Preparing Python Environment..."
+
+echo "---> Downloading Miniconda..."
+wget -O $miniconda_installer "https://repo.continuum.io/miniconda/$conda_runtime"
+chmod +x $miniconda_installer
+
+echo "---> Delete old files..." 
+if [ -e $conda_temp ]; then rm -rf $conda_temp; fi
+
+echo "---> Installing conda to $conda_temp"
+$miniconda_installer -b -p $conda_temp
+rm $miniconda_installer
+export PATH=$PATH:$conda_temp/bin
+
+echo "---> Updating environment"
+conda update --yes --quiet --all
+
+echo "-----> Installing Dependencies..."
+conda env update -n root -f "$build/environment.yml"
+
+echo "-----> Cleaning Python Environment..."
+conda clean --yes --tarballs
+
+echo "-----> Listing Python Environment Information..."
+conda list
+
+echo "-----> Copy to staging area"
+conda_build="$build/.conda"
+if [ -e $conda_build ]; then rm -rf $conda_build; fi
+mkdir -p $conda_build
+cp -a $conda_temp/* $conda_build/
+
+echo "-----> Finished compile step"
+
+echo "-----> Create .profile.d"
+mkdir -p $build/.profile.d
+	cat <<-'EOF' > $build/.profile.d/conda.sh
+	# append to path variable
+	export PATH=$HOME/.conda/bin:$PATH
+	source activate root
+	
+	# set default encoding to UTF-8
+	export LC_ALL=C.UTF-8
+	export LANG=C.UTF-8  
+EOF
+
+echo "-----> Purging cache"
+rm -rf $cache/*
