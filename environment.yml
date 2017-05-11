@@ -23,5 +23,5 @@ dependencies:
   - numpy
   - scipy
   - theano
-  - matplotlib=2.0.0
-  - pandas=0.18.1
+  - matplotlib
+  - pandas
